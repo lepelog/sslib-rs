@@ -1,0 +1,15 @@
+[package]
+name = "arctool-fuse"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.0.15", features = ["derive"] }
+env_logger = "0.9.1"
+fuser = "0.11.1"
+libc = "0.2.135"
+nlzss11 = { path = "../nlzss11" }
+thiserror = "1.0.37"
+u8file = { path = "../u8file" }

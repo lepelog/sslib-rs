@@ -1,0 +1,2 @@
+[workspace]
+members = ["nlzss11", "u8file", "arctool-fuse"]
