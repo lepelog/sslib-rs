@@ -1,2 +1,2 @@
 [workspace]
-members = ["u8file", "arctool-fuse"]
+members = ["u8file", "arctool-fuse", "sslib-proc", "bzs", "verification-tool"]
