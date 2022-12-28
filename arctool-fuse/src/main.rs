@@ -11,7 +11,7 @@ use std::{
 use clap::Parser;
 use fuser::{mount2, FileAttr, FileType, Filesystem, MountOption};
 use nlzss11::DecompressError;
-use u8file::{Entry, U8File};
+use u8file::{Entry, U8File, FileEntry};
 
 #[derive(Parser)]
 /// program to mount .arc and .arc.LZ files as a fuse filesystem
@@ -92,10 +92,12 @@ fn construct_inode_map(
             Entry::DirEntry { name, files } => {
                 construct_inode_map(name, files, inode_supplier, inode_map)
             }
-            Entry::FileRefEntry {
+            Entry::FileEntry {
                 name,
-                offset,
-                length,
+                data: FileEntry::Ref {
+                    offset,
+                    length,
+                }
             } => {
                 let file_inode = inode_supplier.next();
                 inode_map.insert(
@@ -108,7 +110,7 @@ fn construct_inode_map(
                 );
                 file_inode
             }
-            Entry::FileDataEntry { .. } => unreachable!(),
+            _ => unreachable!(),
         })
         .collect();
     inode_map.insert(

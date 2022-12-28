@@ -1,7 +1,7 @@
 use proc_macro::{TokenStream};
 use proc_macro2::{Span, Ident};
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Data, Fields, Type};
+use syn::{parse_macro_input, DeriveInput, Data, Fields, Type, token::Struct};
 
 // these types get special handling, they are a Vec3 and
 // this function returns their inner type
@@ -19,6 +19,72 @@ fn get_special_type_ty(typ: &Type) -> Option<&'static str> {
         _ => {}
     }
     None
+}
+
+#[proc_macro_attribute]
+pub fn derive_patch_match_struct(attr: TokenStream, input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let cloned_input = input.clone();
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let mut patch_struct_inner = quote!();
+    let mut patch_func_inner = quote!();
+    let mut match_func_inner = quote!();
+
+    match input.data {
+        Data::Struct(data) => match data.fields {
+            Fields::Named(named) => {
+                for field in named.named.iter() {
+                    let name = field.ident.as_ref().unwrap();
+                    let ty = &field.ty;
+                    
+                    patch_struct_inner.extend(quote!(
+                        #name: Option<#ty>,
+                    ));
+
+                    patch_func_inner.extend(quote!(
+                        if let Some(val) = &patch.#name {
+                            self.#name = *val;
+                        }
+                    ));
+
+                    match_func_inner.extend(quote!(
+                        if let Some(val) = &partial.#name {
+                            if self.#name != *val {
+                                return false;
+                            }
+                        }
+                    ));
+                }
+            }
+            _ => unimplemented!(),
+        },
+        _ => unimplemented!(),
+    };
+
+    let patch_name: Ident = syn::parse_str(&format!("{name}Patch")).unwrap();
+
+    let gen = quote!(
+        #cloned_input
+
+        pub struct #patch_name {
+            #patch_struct_inner
+        }
+
+        impl #impl_generics #name #ty_generics #where_clause {
+            fn patch(&mut self, patch: &#patch_name) {
+                #patch_func_inner
+            }
+
+            fn matches(&self, partial: &#patch_name) -> bool {
+                #match_func_inner
+                true
+            }
+        }
+    );
+
+    gen.into()
 }
 
 #[proc_macro_derive(SetByName)]

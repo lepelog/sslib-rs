@@ -1,20 +1,21 @@
 use std::io::{SeekFrom, Write, Seek};
 
 use binrw::{binrw, BinRead, BinReaderExt, Endian, ReadOptions, BinWriterExt};
-use sslib_proc::SetByName;
+use sslib_proc::{derive_patch_match_struct};
 
 use crate::encoding::{NulTermShiftJis, write_nul_term_shift_jis};
-use crate::{Datatype, DatatypeSetable, MaskShift, ContextSetError};
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct FILE {
     pub unk: i16,
     pub dummy: i16,
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct SCEN {
     pub name: [u8; 32],
     pub room: u8,
@@ -29,7 +30,8 @@ pub struct SCEN {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct CAM {
     pub unk1: u32,
     pub posx: f32,
@@ -41,7 +43,8 @@ pub struct CAM {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct PATH {
     pub unk1: [u8; 2],
     pub pnt_start_idx: u16,
@@ -50,7 +53,8 @@ pub struct PATH {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct SPTH {
     pub unk1: [u8; 2],
     pub pnt_start_idx: u16,
@@ -59,7 +63,8 @@ pub struct SPTH {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct PNT {
     posx: f32,
     posy: f32,
@@ -68,7 +73,8 @@ pub struct PNT {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct SPNT {
     posx: f32,
     posy: f32,
@@ -77,7 +83,8 @@ pub struct SPNT {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct BPNT {
     pos1x: f32,
     pos1y: f32,
@@ -92,7 +99,8 @@ pub struct BPNT {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct AREA {
     posx: f32,
     posy: f32,
@@ -107,7 +115,8 @@ pub struct AREA {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct EVNT {
     unk1: [u8; 2],
     storyflag1: i16,
@@ -125,7 +134,8 @@ pub struct EVNT {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct PLY {
     storyflag: i16,
     play_cutscene: i8,
@@ -140,7 +150,8 @@ pub struct PLY {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct LYSE {
     storyflag: i16,
     night: i8,
@@ -148,7 +159,8 @@ pub struct LYSE {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct STIF {
     wtf1: f32,
     wtf2: f32,
@@ -163,7 +175,8 @@ pub struct STIF {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct PCAM {
     pos1x: f32,
     pos1y: f32,
@@ -177,7 +190,8 @@ pub struct PCAM {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct LYLT {
     layer: i8,
     demo_high: i8,
@@ -186,7 +200,8 @@ pub struct LYLT {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct SOBJ {
     params1: u32,
     params2: u32,
@@ -204,18 +219,19 @@ pub struct SOBJ {
 }
 
 #[binrw]
-#[derive(Debug, SetByName, Clone, Default)]
+#[derive_patch_match_struct]
+#[derive(Debug, Clone, Default)]
 pub struct OBJ {
-    params1: u32,
-    params2: u32,
-    posx: f32,
-    posy: f32,
-    posz: f32,
-    anglex: u16,
-    angley: u16,
-    anglez: u16,
-    id: u16,
-    name: [u8; 8],
+    pub params1: u32,
+    pub params2: u32,
+    pub posx: f32,
+    pub posy: f32,
+    pub posz: f32,
+    pub anglex: u16,
+    pub angley: u16,
+    pub anglez: u16,
+    pub id: u16,
+    pub name: [u8; 8],
 }
 
 #[derive(Debug, Default, Clone)]
@@ -1054,7 +1070,7 @@ fn write_bzs_entries<WS: Write + Seek>(entries: &BzsEntries, writer: &mut WS, of
 mod test {
     use std::{fs::{File, self}, io::Cursor};
 
-    use crate::{SetByName, Datatype, structs::write_bzs};
+    use crate::{structs::write_bzs};
 
     use super::{parse_bzs_file, AREA};
 
@@ -1066,13 +1082,5 @@ mod test {
         let mut buf = Vec::new();
         write_bzs(&bzs, &mut Cursor::new(&mut buf)).unwrap();
         fs::write("out.bzs", &buf).unwrap();
-    }
-
-    #[test]
-    pub fn test_by_name() {
-        let mut area = AREA { angley: 0, area_link: -1, dummy: [0; 3], posx: 0f32, posy: 0f32, posz: 0f32, sizex: 0f32, sizey: 0f32, sizez: 0f32, unk3: 0 };
-        println!("{:?}", area);
-        let err = area.set("area_link", &Datatype::F32(-5f32)).unwrap_err();
-        println!("{:?}", area);
     }
 }

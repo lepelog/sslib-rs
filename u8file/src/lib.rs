@@ -12,15 +12,19 @@ pub enum Entry {
         name: String,
         files: Vec<Entry>,
     },
-    FileRefEntry {
+    FileEntry {
         name: String,
+        data: FileEntry
+    },
+}
+
+#[derive(Debug)]
+pub enum FileEntry {
+    Ref {
         offset: u32,
         length: u32,
     },
-    FileDataEntry {
-        name: String,
-        data: Vec<u8>,
-    },
+    Data(Vec<u8>),
 }
 
 pub struct U8File {
@@ -122,18 +126,17 @@ impl Entry {
     }
 
     pub fn is_ref(&self) -> bool {
-        matches!(self, Entry::FileRefEntry { .. })
+        matches!(self, Entry::FileEntry { data: FileEntry::Ref {..}, .. })
     }
 
     pub fn is_data(&self) -> bool {
-        matches!(self, Entry::FileDataEntry { .. })
+        matches!(self, Entry::FileEntry { data: FileEntry::Data(..), .. })
     }
 
     pub fn get_name(&self) -> &String {
         match self {
             Self::DirEntry { name, .. } => name,
-            Self::FileRefEntry { name, .. } => name,
-            Self::FileDataEntry { name, .. } => name,
+            Self::FileEntry { name, .. } => name,
         }
     }
 }
@@ -190,6 +193,18 @@ impl U8File {
             .and_then(|entry| self.get_data_from_entry(entry))
     }
 
+    pub fn set_entry_data(&mut self, path: &str, new_data: Vec<u8>) -> bool {
+        self.get_entry_mut(path).map_or(false, |entry| {
+            match entry {
+                Entry::DirEntry { .. } => false,
+                Entry::FileEntry { data, .. } => {
+                    *data = FileEntry::Data(new_data);
+                    true
+                }
+            }
+        })
+    }
+
     pub fn get_data_from_offset_len(&self, offset: u32, length: u32) -> &[u8] {
         &self.data[offset as usize..][..length as usize]
     }
@@ -197,8 +212,8 @@ impl U8File {
     pub fn get_data_from_entry<'a>(&'a self, entry: &'a Entry) -> Option<&'a [u8]> {
         match entry {
             Entry::DirEntry { .. } => None,
-            Entry::FileDataEntry { data, .. } => Some(data),
-            &Entry::FileRefEntry { offset, length, .. } => {
+            Entry::FileEntry { data: FileEntry::Data(data), .. } => Some(data),
+            &Entry::FileEntry { data: FileEntry::Ref { offset, length }, .. } => {
                 Some(&self.data[offset as usize..][..length as usize])
             }
         }
@@ -430,7 +445,7 @@ impl U8File {
                         _ => unreachable!(),
                     }
                 }
-                &Entry::FileRefEntry { offset, length, .. } => {
+                &Entry::FileEntry { data: FileEntry::Ref { offset, length }, .. } => {
                     rebuild_entries.push(RebuildEntry::FileRef {
                         length,
                         offset,
@@ -440,7 +455,7 @@ impl U8File {
                     *data_offset += length;
                     *data_offset += (*data_offset as isize).neg().rem_euclid(0x20) as u32;
                 }
-                Entry::FileDataEntry { data, .. } => {
+                Entry::FileEntry { data: FileEntry::Data(data), .. } => {
                     rebuild_entries.push(RebuildEntry::FileData {
                         str_offset,
                         data,
@@ -509,10 +524,12 @@ fn read_nodes_recursive(
                 data_start,
                 ..
             } => {
-                files.push(Entry::FileRefEntry {
+                files.push(Entry::FileEntry {
                     name: node_name,
-                    offset: data_start,
-                    length: data_size,
+                    data: FileEntry::Ref { 
+                        offset: data_start,
+                        length: data_size,
+                    }
                 });
                 cur_idx += 1;
             }
