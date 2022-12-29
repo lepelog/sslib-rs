@@ -1,7 +1,7 @@
 use proc_macro::{TokenStream};
 use proc_macro2::{Span, Ident};
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Data, Fields, Type, token::Struct};
+use syn::{parse_macro_input, DeriveInput, Data, Fields, Type};
 
 // these types get special handling, they are a Vec3 and
 // this function returns their inner type
@@ -22,7 +22,7 @@ fn get_special_type_ty(typ: &Type) -> Option<&'static str> {
 }
 
 #[proc_macro_attribute]
-pub fn derive_patch_match_struct(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn derive_patch_match_struct(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
     let cloned_input = input.clone();
