@@ -126,17 +126,23 @@ pub fn parse_msbt<R: Read + Seek>(r: &mut R) -> binrw::BinResult<Msbt> {
             },
             0x54585432 /* TXT2 */ => {
                 let count = r.read_be::<u32>()?;
-                for i in 0..count {
-                    r.seek(SeekFrom::Start(cur_seg_start + 4 + i as u64 * 4))?;
-                    let str_offset = r.read_be::<u32>()?;
-                    r.seek(SeekFrom::Start(cur_seg_start + str_offset as u64))?;
-                    let mut utf16buf = Vec::new();
-                    loop {
-                        let val = r.read_be::<u16>()?;
-                        if val == 0 {
-                            break;
-                        }
-                        utf16buf.push(val);
+                let mut str_offsets = Vec::new();
+                r.seek(SeekFrom::Start(cur_seg_start + 4))?;
+                for _ in 0..count {
+                    str_offsets.push(r.read_be::<u32>()?);
+                }
+                str_offsets.push(seg_len);
+                txt2.reserve(str_offsets.len());
+                // we can't rely on the null terminator, cause that sometimes occurs
+                // in the middle of commands, so we need to get the next offset and
+                // stop there
+                // TODO use array_windows when stable
+                for window in str_offsets.windows(2) {
+                    let len = (window[1] - window[0]) / 2 - 1;
+                    r.seek(SeekFrom::Start(cur_seg_start + window[0] as u64))?;
+                    let mut utf16buf = Vec::with_capacity(len as usize);
+                    for _ in 0..len {
+                        utf16buf.push(r.read_be::<u16>()?);
                     }
                     txt2.push(utf16buf);
                 }
@@ -407,6 +413,87 @@ impl Msbf {
         write_lbl_fen(&self.entrypoints, u32::from_be_bytes(*b"FEN1"), 19, ws)?;
         // write file length
         let pos = ws.stream_position()?;
+        ws.seek(SeekFrom::Start(0x12))?;
+        ws.write_be(&(pos as u32))?;
+        Ok(())
+    }
+}
+
+impl Msbt {
+    pub fn write_msbt<WS: Write + Seek>(&self, ws: &mut WS) -> binrw::BinResult<()> {
+        const HEADER: &[u8; 16] = b"MsgStdBn\xFE\xFF\0\0\x01\x03\0\x03";
+        const EMPTY_HEADER: &[u8; 16] = &[0u8; 16];
+        ws.write_all(HEADER)?;
+        ws.write_all(EMPTY_HEADER)?;
+        // LBL1
+        write_lbl_fen(&self.lbl, u32::from_be_bytes(*b"LBL1"), 31, ws)?;
+        // ATR1
+        let atr1_start = ws.stream_position()?;
+        let atr1_data_start = atr1_start + 16;
+        // verify that all have the same atr lengths
+        // TODO: maybe just pad to longest?
+        let atr_len = self.text[0].atr.len();
+        for text in &self.text {
+            if atr_len != text.atr.len() {
+                // TODO error, no panic
+                panic!("missmatched atr lengths");
+            }
+        }
+        ws.seek(SeekFrom::Start(atr1_data_start))?;
+        // dimensions
+        ws.write_be(&(self.text.len() as u32))?;
+        ws.write_be(&(atr_len as u32))?;
+        // data
+        for text in &self.text {
+            for atr in &text.atr {
+                ws.write_all(&[*atr])?;
+            }
+        }
+        // pad to 16 bytes
+        let atr1_end = ws.stream_position()?;
+        let pads = (atr1_end as isize).neg().rem_euclid(16);
+        for _ in 0..pads {
+            ws.write_all(&[0xAB])?;
+        }
+
+        // write ATR1 header
+        ws.seek(SeekFrom::Start(atr1_start))?;
+        ws.write_all(b"ATR1")?;
+        ws.write_be(&(atr1_end as u32 - atr1_start as u32 - 16))?;
+
+        // TXT2
+        let txt2_start = atr1_end + pads as u64;
+        let txt2_data_start = txt2_start + 16;
+
+        ws.seek(SeekFrom::Start(txt2_data_start))?;
+        // write total count
+        ws.write_be(&(self.text.len() as u32))?;
+        let mut txt2_offset: u32 = 4 + self.text.len() as u32 * 4;
+        for (i, txt) in self.text.iter().enumerate() {
+            ws.seek(SeekFrom::Start(txt2_data_start + 4 + i as u64 * 4))?;
+            ws.write_be(&txt2_offset)?;
+            ws.seek(SeekFrom::Start(txt2_data_start + txt2_offset as u64))?;
+            ws.write_be(&txt.text)?;
+            ws.write_be(&0u16)?;
+            txt2_offset = (ws.stream_position()? - txt2_data_start) as u32;
+        }
+
+        // pad to 16 bytes
+        let txt2_end = ws.stream_position()?;
+        let pads = (txt2_end as isize).neg().rem_euclid(16);
+        for _ in 0..pads {
+            ws.write_all(&[0xAB])?;
+        }
+
+        let pos = ws.stream_position()?;
+
+        // write TXT2 header
+        ws.seek(SeekFrom::Start(txt2_start))?;
+        ws.write_all(b"TXT2")?;
+        // section length
+        ws.write_be(&(txt2_end as u32 - txt2_data_start as u32))?;
+
+        // write file length
         ws.seek(SeekFrom::Start(0x12))?;
         ws.write_be(&(pos as u32))?;
         Ok(())
