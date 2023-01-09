@@ -38,10 +38,10 @@ pub enum RelReadError {
 
 #[derive(Debug)]
 pub struct Relocation {
-    offset: u32,
-    typ: RelocationKind,
-    symbol_section: u8,
-    symbol_offset: u32,
+    pub offset: u32,
+    pub typ: RelocationKind,
+    pub symbol_section: u8,
+    pub symbol_offset: u32,
 }
 
 #[derive(Debug)]
@@ -126,10 +126,10 @@ impl<'a> Section<'a> {
 
 #[derive(Debug)]
 pub struct Rel<'a> {
-    pub header: RelHeader,
-    pub sections: Vec<Section<'a>>,
+    header: RelHeader,
+    sections: Vec<Section<'a>>,
     // Map<OtherRelIdOrMailDol, Map<LocalSection, Vec<Relocations>>>
-    pub relocations: BTreeMap<u32, BTreeMap<u8, Vec<Relocation>>>,
+    relocations: BTreeMap<u32, BTreeMap<u8, Vec<Relocation>>>,
 }
 
 fn write_relocations_for_module<WS: Write + Seek>(
@@ -318,5 +318,56 @@ impl<'a> Rel<'a> {
 
     pub fn get_sections(&self) -> &Vec<Section> {
         &self.sections
+    }
+
+    pub fn offset_in_rel_to_section_offset(&self, offset: u32) -> Option<(u8, u32)> {
+        let mut offset_after_last_section = 0;
+        for (i, section) in self.sections.iter().enumerate() {
+            let (start, end) = match section {
+                Section::Bss { size } => {
+                    (offset_after_last_section, offset_after_last_section + *size)
+                }
+                Section::Empty => continue,
+                Section::Data { data, offset, .. } => (*offset, *offset + data.len() as u32),
+            };
+            offset_after_last_section = end;
+            if offset >= start && offset < end {
+                return Some((i as u8, offset - start));
+            }
+        }
+        None
+    }
+
+    pub fn get_section_data<'b>(&'b self, section: u8) -> Option<&'b [u8]> {
+        match self.sections.get(section as usize) {
+            Some(Section::Data { data, .. }) => Some(data.as_ref()),
+            _ => None,
+        }
+    }
+
+    pub fn get_section_data_mut<'b>(&'b mut self, section: u8) -> Option<&'b mut [u8]> {
+        match self.sections.get_mut(section as usize) {
+            Some(Section::Data { data, .. }) => Some(data.to_mut()),
+            _ => None,
+        }
+    }
+
+    pub fn get_section_data_for_rel_offset<'b>(&'b self, offset: u32) -> Option<&'b [u8]> {
+        let (section, offset_in_section) = self.offset_in_rel_to_section_offset(offset)?;
+        match self.sections.get(section as usize) {
+            Some(Section::Data { data, .. }) => data.as_ref().get(offset_in_section as usize..),
+            _ => None,
+        }
+    }
+
+    pub fn get_section_data_for_rel_offset_mut<'b>(
+        &'b mut self,
+        offset: u32,
+    ) -> Option<&'b mut [u8]> {
+        let (section, offset_in_section) = self.offset_in_rel_to_section_offset(offset)?;
+        match self.sections.get_mut(section as usize) {
+            Some(Section::Data { data, .. }) => data.to_mut().get_mut(offset_in_section as usize..),
+            _ => None,
+        }
     }
 }

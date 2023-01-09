@@ -1,7 +1,7 @@
-use proc_macro::{TokenStream};
-use proc_macro2::{Span, Ident};
+use proc_macro::TokenStream;
+use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Data, Fields, Type};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, Type};
 
 // these types get special handling, they are a Vec3 and
 // this function returns their inner type
@@ -14,8 +14,8 @@ fn get_special_type_ty(typ: &Type) -> Option<&'static str> {
                 } else if seg.ident == "Vec3s" {
                     return Some("u16");
                 }
-            } 
-        },
+            }
+        }
         _ => {}
     }
     None
@@ -38,7 +38,7 @@ pub fn derive_patch_match_struct(_attr: TokenStream, input: TokenStream) -> Toke
                 for field in named.named.iter() {
                     let name = field.ident.as_ref().unwrap();
                     let ty = &field.ty;
-                    
+
                     patch_struct_inner.extend(quote!(
                         #name: Option<#ty>,
                     ));
@@ -101,7 +101,9 @@ pub fn set_derive(input: TokenStream) -> TokenStream {
                 for field in named.named.iter() {
                     let name = field.ident.as_ref().unwrap();
                     let ty = &field.ty;
-                    if let Some(special_type) = get_special_type_ty(ty).map(|c| Ident::new(c, Span::call_site())) {
+                    if let Some(special_type) =
+                        get_special_type_ty(ty).map(|c| Ident::new(c, Span::call_site()))
+                    {
                         // use a special case for Vec3{f,s} types, so they can be written as `posx` etc.
                         for suffix in ["x", "y", "z"].map(|c| Ident::new(c, Span::call_site())) {
                             let match_str = format!("{name}{suffix}");

@@ -1,9 +1,9 @@
-use std::io::{SeekFrom, Write, Seek};
+use std::io::{Seek, SeekFrom, Write};
 
-use binrw::{binrw, BinRead, BinReaderExt, Endian, ReadOptions, BinWriterExt};
-use sslib_proc::{derive_patch_match_struct};
+use binrw::{binrw, BinRead, BinReaderExt, BinWriterExt, Endian, ReadOptions};
+use sslib_proc::derive_patch_match_struct;
 
-use crate::encoding::{NulTermShiftJis, write_nul_term_shift_jis};
+use crate::encoding::{write_nul_term_shift_jis, NulTermShiftJis};
 
 #[binrw]
 #[derive_patch_match_struct]
@@ -25,7 +25,7 @@ pub struct SCEN {
     pub byte5: u8,
     pub flag6: u8,
     // always 0
-    pub byte7: u8,
+    pub zero: u8,
     pub saveprompt: u8,
 }
 
@@ -102,120 +102,120 @@ pub struct BPNT {
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct AREA {
-    posx: f32,
-    posy: f32,
-    posz: f32,
-    sizex: f32,
-    sizey: f32,
-    sizez: f32,
-    angley: u16,
-    area_link: i16,
-    unk3: u8,
-    dummy: [u8; 3],
+    pub posx: f32,
+    pub posy: f32,
+    pub posz: f32,
+    pub sizex: f32,
+    pub sizey: f32,
+    pub sizez: f32,
+    pub angley: u16,
+    pub area_link: i16,
+    pub unk3: u8,
+    pub dummy: [u8; 3],
 }
 
 #[binrw]
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct EVNT {
-    unk1: [u8; 2],
-    storyflag1: i16,
-    storyflag2: i16,
-    unk2: [u8; 3],
-    exit_id: u8,
-    unk3: u8,
-    sceneflag1: u8,
-    sceneflag2: u8,
-    skipflag: u8,
-    dummy1: i16,
-    item: i16,
-    dummy2: i16,
-    name: [u8; 32],
+    pub unk1: [u8; 2],
+    pub storyflag1: i16,
+    pub storyflag2: i16,
+    pub unk2: [u8; 3],
+    pub exit_id: u8,
+    pub unk3: u8,
+    pub sceneflag1: u8,
+    pub sceneflag2: u8,
+    pub skipflag: u8,
+    pub dummy1: i16,
+    pub item: i16,
+    pub dummy2: i16,
+    pub name: [u8; 32],
 }
 
 #[binrw]
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct PLY {
-    storyflag: i16,
-    play_cutscene: i8,
-    byte4: u8,
-    posx: f32,
-    posy: f32,
-    posz: f32,
-    anglex: f32,
-    angley: f32,
-    anglez: f32,
-    entrance_id: i16,
+    pub storyflag: i16,
+    pub play_cutscene: i8,
+    pub byte4: u8,
+    pub posx: f32,
+    pub posy: f32,
+    pub posz: f32,
+    pub anglex: f32,
+    pub angley: f32,
+    pub anglez: f32,
+    pub entrance_id: i16,
 }
 
 #[binrw]
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct LYSE {
-    storyflag: i16,
-    night: i8,
-    layer: i8,
+    pub storyflag: i16,
+    pub night: i8,
+    pub layer: i8,
 }
 
 #[binrw]
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct STIF {
-    wtf1: f32,
-    wtf2: f32,
-    wtf3: f32,
-    byte1: i8,
-    flagindex: i8,
-    byte3: i8,
-    byte4: i8,
-    unk1: [u8; 2],
-    map_name_id: i8,
-    unk2: u8,
+    pub wtf1: f32,
+    pub wtf2: f32,
+    pub wtf3: f32,
+    pub byte1: i8,
+    pub flagindex: i8,
+    pub byte3: i8,
+    pub byte4: i8,
+    pub unk1: [u8; 2],
+    pub map_name_id: i8,
+    pub unk2: u8,
 }
 
 #[binrw]
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct PCAM {
-    pos1x: f32,
-    pos1y: f32,
-    pos1z: f32,
-    pos2x: f32,
-    pos2y: f32,
-    pos2z: f32,
-    angle: f32,
-    wtf: f32,
-    unk: [u8; 4],
+    pub pos1x: f32,
+    pub pos1y: f32,
+    pub pos1z: f32,
+    pub pos2x: f32,
+    pub pos2y: f32,
+    pub pos2z: f32,
+    pub angle: f32,
+    pub wtf: f32,
+    pub unk: [u8; 4],
 }
 
 #[binrw]
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct LYLT {
-    layer: i8,
-    demo_high: i8,
-    demo_low: i8,
-    dummy: i8,
+    pub layer: i8,
+    pub demo_high: i8,
+    pub demo_low: i8,
+    pub dummy: i8,
 }
 
 #[binrw]
 #[derive_patch_match_struct]
 #[derive(Debug, Clone, Default)]
 pub struct SOBJ {
-    params1: u32,
-    params2: u32,
-    posx: f32,
-    posy: f32,
-    posz: f32,
-    sizex: f32,
-    sizey: f32,
-    sizez: f32,
-    anglex: u16,
-    angley: u16,
-    anglez: u16,
-    id: u16,
-    name: [u8; 8],
+    pub params1: u32,
+    pub params2: u32,
+    pub posx: f32,
+    pub posy: f32,
+    pub posz: f32,
+    pub sizex: f32,
+    pub sizey: f32,
+    pub sizez: f32,
+    pub anglex: u16,
+    pub angley: u16,
+    pub anglez: u16,
+    pub id: u16,
+    pub name: [u8; 8],
 }
 
 #[binrw]
@@ -299,7 +299,7 @@ pub struct BzsEntries {
     pub stas: Vec<SOBJ>,
     pub stag: Vec<SOBJ>,
     pub sndt: Vec<SOBJ>,
-    pub lay: Vec<BzsEntries>
+    pub lay: Vec<BzsEntries>,
 }
 
 #[derive(Debug)]
@@ -673,7 +673,11 @@ pub fn write_bzs<WS: Write + Seek>(entries: &BzsEntries, writer: &mut WS) -> bin
     Ok(())
 }
 
-fn write_bzs_entries<WS: Write + Seek>(entries: &BzsEntries, writer: &mut WS, offset: u64) -> binrw::BinResult<usize> {
+fn write_bzs_entries<WS: Write + Seek>(
+    entries: &BzsEntries,
+    writer: &mut WS,
+    offset: u64,
+) -> binrw::BinResult<usize> {
     // how many header entries are needed?
     // we skip empty objects here
     let mut count = 0;
@@ -761,7 +765,11 @@ fn write_bzs_entries<WS: Write + Seek>(entries: &BzsEntries, writer: &mut WS, of
     // we now know the length of the headers, so the data offset
     let mut current_data_offset = offset + count as u64 * 12;
     let mut header_index = 0;
-    let mut write_header = |name: &[u8; 4], count: usize, current_data_offset: u64, writer: &mut WS| -> binrw::BinResult<()> {
+    let mut write_header = |name: &[u8; 4],
+                            count: usize,
+                            current_data_offset: u64,
+                            writer: &mut WS|
+     -> binrw::BinResult<()> {
         let entry_pos = offset + header_index as u64 * 12;
         header_index += 1;
         writer.seek(SeekFrom::Start(entry_pos))?;
@@ -769,7 +777,7 @@ fn write_bzs_entries<WS: Write + Seek>(entries: &BzsEntries, writer: &mut WS, of
             count: count as u16,
             ff: 0xFFFF,
             name: u32::from_be_bytes(*name),
-            offset: (current_data_offset - entry_pos) as u32
+            offset: (current_data_offset - entry_pos) as u32,
         })?;
         Ok(())
     };
@@ -1025,17 +1033,22 @@ fn write_bzs_entries<WS: Write + Seek>(entries: &BzsEntries, writer: &mut WS, of
         for (i, lay) in entries.lay.iter().enumerate() {
             // TODO: is this seek needed?
             writer.seek(SeekFrom::Start(current_data_offset + lay_data_rel_offset))?;
-            let entry_count = write_bzs_entries(lay, writer, current_data_offset + lay_data_rel_offset)?;
+            let entry_count =
+                write_bzs_entries(lay, writer, current_data_offset + lay_data_rel_offset)?;
             let lay_entry = LayEntry {
                 count: entry_count as u16,
                 ff: u16::MAX,
-                offset: if entry_count > 0 { (lay_data_rel_offset - i as u64 * 8) as u32 } else { 0 },
+                offset: if entry_count > 0 {
+                    (lay_data_rel_offset - i as u64 * 8) as u32
+                } else {
+                    0
+                },
             };
             lay_data_rel_offset = writer.stream_position()? - current_data_offset;
             writer.seek(SeekFrom::Start(current_data_offset + i as u64 * 8))?;
             writer.write_be(&lay_entry)?;
         }
-        
+
         current_data_offset += lay_data_rel_offset;
         writer.seek(SeekFrom::Start(current_data_offset))?;
     }
@@ -1068,9 +1081,12 @@ fn write_bzs_entries<WS: Write + Seek>(entries: &BzsEntries, writer: &mut WS, of
 
 #[cfg(test)]
 mod test {
-    use std::{fs::{File, self}, io::Cursor};
+    use std::{
+        fs::{self, File},
+        io::Cursor,
+    };
 
-    use crate::{structs::write_bzs};
+    use crate::structs::write_bzs;
 
     use super::{parse_bzs_file, AREA};
 

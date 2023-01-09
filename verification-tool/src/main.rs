@@ -1,11 +1,16 @@
-use std::{path::PathBuf, fs, io::Cursor, ffi::OsString};
+use std::{ffi::OsString, fs, io::Cursor, path::PathBuf};
 
 use bzs::structs::{parse_bzs_file, write_bzs};
 use nlzss11::decompress;
 use u8file::U8File;
 
 fn main() {
-    let game_root_path = PathBuf::from(std::env::args().skip(1).next().expect("first argument is the path to the game root"));
+    let game_root_path = PathBuf::from(
+        std::env::args()
+            .skip(1)
+            .next()
+            .expect("first argument is the path to the game root"),
+    );
     roundtrip_all_rel(&game_root_path);
     roundtrip_all(&game_root_path);
 }
@@ -13,7 +18,7 @@ fn main() {
 fn roundtrip_all_rel(game_root_path: &PathBuf) {
     let rel_arc_path = game_root_path.join("files/rels.arc");
     let rel_arc_data = fs::read(rel_arc_path).unwrap();
-    let rel_arc = U8File::from_vec(rel_arc_data).unwrap();
+    let rel_arc = U8File::read(&rel_arc_data).unwrap();
     if let Some(u8file::Entry::DirEntry { files, .. }) = rel_arc.get_entry("rels") {
         let mut out_buf = Vec::new();
         for rel_entry in files {
@@ -43,7 +48,7 @@ fn roundtrip_all(game_root_path: &PathBuf) {
         let arc_path = stages_path.join(os_path);
         let compr_data = fs::read(&arc_path).expect("failed to open file");
         let arc_data = decompress(&compr_data).expect("error decompressing");
-        let arc = U8File::from_vec(arc_data).expect("failed to parse arc");
+        let arc = U8File::read(&arc_data).expect("failed to parse arc");
         let bzs_data = arc.get_entry_data("dat/stage.bzs").expect("no stage.bzs");
         roundtrip_bzs(bzs_data, &dir);
     }
@@ -61,4 +66,3 @@ fn roundtrip_bzs(data: &[u8], stage: &OsString) {
         }
     }
 }
-

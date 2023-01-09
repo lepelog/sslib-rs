@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref, iter::repeat};
+use std::{borrow::Cow, iter::repeat, ops::Deref};
 
 use binrw::{BinRead, BinWrite};
 use encoding_rs::SHIFT_JIS;
@@ -72,10 +72,11 @@ impl BinRead for NulTermShiftJis {
 
 pub fn write_nul_term_shift_jis<W: std::io::Write + std::io::Seek>(
     s: &str,
-    writer: &mut W
+    writer: &mut W,
 ) -> binrw::BinResult<()> {
-    let result = encode(s).map_err(|e| {
-        binrw::Error::Custom { pos: writer.stream_position().unwrap_or_default(), err: Box::new(format!("invalid for shift jis: {}", s)) }
+    let result = encode(s).map_err(|e| binrw::Error::Custom {
+        pos: writer.stream_position().unwrap_or_default(),
+        err: Box::new(format!("invalid for shift jis: {}", s)),
     })?;
     writer.write_all(&result)?;
     writer.write_all(&[0])?;

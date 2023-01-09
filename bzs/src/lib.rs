@@ -1,6 +1,6 @@
 use std::{borrow::Cow, ops::Deref};
 
-use encoding::{EncodingError, encode_into, decode};
+use encoding::{decode, encode_into, EncodingError};
 
 mod encoding;
 pub mod structs;
@@ -31,7 +31,7 @@ mask_setable_impl!(u16);
 mask_setable_impl!(u32);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct MaskShift{
+pub struct MaskShift {
     mask: u32,
     shift: u32,
 }

@@ -1,6 +1,6 @@
 use std::{
     borrow::{Borrow, BorrowMut},
-    io::{Cursor, Seek, SeekFrom, Write},
+    io::{Cursor, Seek, SeekFrom, Write, Read},
     ops::Neg,
 };
 
@@ -8,27 +8,18 @@ use byteorder::{ReadBytesExt, WriteBytesExt, BE};
 
 #[derive(Debug)]
 pub enum Entry {
-    DirEntry {
-        name: String,
-        files: Vec<Entry>,
-    },
-    FileEntry {
-        name: String,
-        data: FileEntry
-    },
+    DirEntry { name: String, files: Vec<Entry> },
+    FileEntry { name: String, data: FileEntry },
 }
 
 #[derive(Debug)]
 pub enum FileEntry {
-    Ref {
-        offset: u32,
-        length: u32,
-    },
+    Ref { offset: u32, length: u32 },
     Data(Vec<u8>),
 }
 
-pub struct U8File {
-    data: Vec<u8>,
+pub struct U8File<'a> {
+    data: &'a [u8],
     root: Vec<Entry>,
 }
 
@@ -74,7 +65,7 @@ impl RawNode {
     }
 }
 
-fn read_raw_node(data: &mut Cursor<Vec<u8>>, pos: u32) -> Result<RawNode, U8ParseError> {
+fn read_raw_node<RS: Read + Seek>(data: &mut RS, pos: u32) -> Result<RawNode, U8ParseError> {
     data.seek(SeekFrom::Start(pos.into()))?;
     let node_type = data.read_u8()?;
     if node_type == 0 {
@@ -101,7 +92,7 @@ fn read_raw_node(data: &mut Cursor<Vec<u8>>, pos: u32) -> Result<RawNode, U8Pars
     }
 }
 
-fn read_ascii(data: &mut Cursor<Vec<u8>>, pos: u32) -> Result<String, U8ParseError> {
+fn read_ascii<RS: Read + Seek>(data: &mut RS, pos: u32) -> Result<String, U8ParseError> {
     data.seek(SeekFrom::Start(pos.into()))?;
     let mut buf = Vec::new();
     loop {
@@ -126,11 +117,23 @@ impl Entry {
     }
 
     pub fn is_ref(&self) -> bool {
-        matches!(self, Entry::FileEntry { data: FileEntry::Ref {..}, .. })
+        matches!(
+            self,
+            Entry::FileEntry {
+                data: FileEntry::Ref { .. },
+                ..
+            }
+        )
     }
 
     pub fn is_data(&self) -> bool {
-        matches!(self, Entry::FileEntry { data: FileEntry::Data(..), .. })
+        matches!(
+            self,
+            Entry::FileEntry {
+                data: FileEntry::Data(..),
+                ..
+            }
+        )
     }
 
     pub fn get_name(&self) -> &String {
@@ -143,9 +146,9 @@ impl Entry {
 
 pub const MAGIC_HEADER: u32 = 0x55AA382D;
 
-impl U8File {
+impl <'a> U8File<'a> {
     /// reads a byte Vector into an U8File or returns an Error
-    pub fn from_vec(v: Vec<u8>) -> Result<Self, U8ParseError> {
+    pub fn read(v: &'a [u8]) -> Result<Self, U8ParseError> {
         let mut c = Cursor::new(v);
         let header = c.read_u32::<BE>()?;
         if MAGIC_HEADER != header {
@@ -184,23 +187,21 @@ impl U8File {
         &self.root
     }
 
-    pub fn get_data(&self) -> &Vec<u8> {
+    pub fn get_data(&self) -> &[u8] {
         &self.data
     }
 
-    pub fn get_entry_data<'a>(&'a self, path: &str) -> Option<&[u8]> {
+    pub fn get_entry_data<'b>(&'b self, path: &str) -> Option<&'b [u8]> {
         self.get_entry(path)
             .and_then(|entry| self.get_data_from_entry(entry))
     }
 
     pub fn set_entry_data(&mut self, path: &str, new_data: Vec<u8>) -> bool {
-        self.get_entry_mut(path).map_or(false, |entry| {
-            match entry {
-                Entry::DirEntry { .. } => false,
-                Entry::FileEntry { data, .. } => {
-                    *data = FileEntry::Data(new_data);
-                    true
-                }
+        self.get_entry_mut(path).map_or(false, |entry| match entry {
+            Entry::DirEntry { .. } => false,
+            Entry::FileEntry { data, .. } => {
+                *data = FileEntry::Data(new_data);
+                true
             }
         })
     }
@@ -209,19 +210,23 @@ impl U8File {
         &self.data[offset as usize..][..length as usize]
     }
 
-    pub fn get_data_from_entry<'a>(&'a self, entry: &'a Entry) -> Option<&'a [u8]> {
+    pub fn get_data_from_entry<'b>(&'b self, entry: &'b Entry) -> Option<&'b [u8]> {
         match entry {
             Entry::DirEntry { .. } => None,
-            Entry::FileEntry { data: FileEntry::Data(data), .. } => Some(data),
-            &Entry::FileEntry { data: FileEntry::Ref { offset, length }, .. } => {
-                Some(&self.data[offset as usize..][..length as usize])
-            }
+            Entry::FileEntry {
+                data: FileEntry::Data(data),
+                ..
+            } => Some(data),
+            &Entry::FileEntry {
+                data: FileEntry::Ref { offset, length },
+                ..
+            } => Some(&self.data[offset as usize..][..length as usize]),
         }
     }
 
     /// returns a reference to the entry specified by the path
     /// a starting "/" is ignored
-    pub fn get_entry<'a>(&'a self, path: &str) -> Option<&'a Entry> {
+    pub fn get_entry<'b>(&'b self, path: &str) -> Option<&'b Entry> {
         let mut parts_iter = path.split('/').peekable();
         // allow starting with leading slash or not
         if parts_iter.peek() == Some(&"") {
@@ -246,7 +251,7 @@ impl U8File {
 
     /// returns a reference to the entry specified by the path
     /// a starting "/" is ignored
-    pub fn get_entry_mut<'a>(&'a mut self, path: &str) -> Option<&'a mut Entry> {
+    pub fn get_entry_mut<'b>(&'b mut self, path: &str) -> Option<&'b mut Entry> {
         let mut parts_iter = path.split('/').peekable();
         // allow starting with leading slash or not
         if parts_iter.peek() == Some(&"") {
@@ -408,9 +413,9 @@ impl U8File {
         Ok(())
     }
 
-    fn do_rebuild_rec<'a>(
-        &'a self,
-        files: &'a [Entry],
+    fn do_rebuild_rec<'b: 'a>(
+        &'b self,
+        files: &'b [Entry],
         parent: u32,
         data_offset: &mut u32,
         rebuild_entries: &mut Vec<RebuildEntry<'a>>,
@@ -445,7 +450,10 @@ impl U8File {
                         _ => unreachable!(),
                     }
                 }
-                &Entry::FileEntry { data: FileEntry::Ref { offset, length }, .. } => {
+                &Entry::FileEntry {
+                    data: FileEntry::Ref { offset, length },
+                    ..
+                } => {
                     rebuild_entries.push(RebuildEntry::FileRef {
                         length,
                         offset,
@@ -455,7 +463,10 @@ impl U8File {
                     *data_offset += length;
                     *data_offset += (*data_offset as isize).neg().rem_euclid(0x20) as u32;
                 }
-                Entry::FileEntry { data: FileEntry::Data(data), .. } => {
+                Entry::FileEntry {
+                    data: FileEntry::Data(data),
+                    ..
+                } => {
                     rebuild_entries.push(RebuildEntry::FileData {
                         str_offset,
                         data,
@@ -490,8 +501,8 @@ enum RebuildEntry<'a> {
     },
 }
 
-fn read_nodes_recursive(
-    data: &mut Cursor<Vec<u8>>,
+fn read_nodes_recursive<RS: Read + Seek>(
+    data: &mut RS,
     start_idx: u32,
     end_index: u32,
     first_node_offset: u32,
@@ -526,10 +537,10 @@ fn read_nodes_recursive(
             } => {
                 files.push(Entry::FileEntry {
                     name: node_name,
-                    data: FileEntry::Ref { 
+                    data: FileEntry::Ref {
                         offset: data_start,
                         length: data_size,
-                    }
+                    },
                 });
                 cur_idx += 1;
             }
