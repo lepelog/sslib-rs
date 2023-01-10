@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use bzs::structs::{BzsEntries, OBJ, SOBJ};
 
+use crate::actor_params::{NewSobjShim, ScChangOpts};
+
 #[derive(Debug, thiserror::Error)]
 pub enum InvalidPatchError {
     #[error("Could not find id {0}")]
@@ -12,6 +14,7 @@ pub trait ByIdExt {
     type Out;
     fn remove_by_id(&mut self, id: u16) -> Result<Self::Out, InvalidPatchError>;
     fn modify_by_id(&mut self, id: u16) -> Result<&mut Self::Out, InvalidPatchError>;
+    fn add_sc_chang(&mut self, next_id: &mut u16) -> ScChangOpts;
 }
 
 impl ByIdExt for Vec<OBJ> {
@@ -27,6 +30,10 @@ impl ByIdExt for Vec<OBJ> {
         self.iter_mut()
             .find(|obj| obj.id == id)
             .ok_or(InvalidPatchError::IdNotFound(id))
+    }
+
+    fn add_sc_chang<'a>(&'a mut self, next_id: &mut u16) -> ScChangOpts<'a> {
+        todo!()
     }
 }
 
@@ -44,10 +51,21 @@ impl ByIdExt for Vec<SOBJ> {
             .find(|obj| obj.id == id)
             .ok_or(InvalidPatchError::IdNotFound(id))
     }
+
+    fn add_sc_chang<'a>(&'a mut self, next_id: &mut u16) -> ScChangOpts<'a> {
+        self.push(SOBJ::default());
+        *next_id += 1; 
+        let sobj = self.last_mut().unwrap();
+        sobj.id = *next_id;
+        sobj.name = zero_pad(b"ScChang");
+        sobj.params1 = 0xFFFFFFFF;
+        sobj.params2 = 0xFF5FFFFF;
+        ScChangOpts { sobj }
+    }
 }
 
 /// Replace new_value in value, by applying the mask after the shift
-fn mask_shift_set(value: u32, mask: u32, shift: u32, new_value: u32) -> u32 {
+pub fn mask_shift_set(value: u32, mask: u32, shift: u32, new_value: u32) -> u32 {
     let new_value = new_value & mask;
     (value & !(mask << shift)) | (new_value << shift)
 }

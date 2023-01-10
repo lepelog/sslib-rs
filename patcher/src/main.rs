@@ -13,6 +13,7 @@ mod eventpatches;
 mod options;
 mod patches;
 mod patches_gen;
+mod actor_params;
 
 fn main() -> anyhow::Result<()> {
     let actual_extract_path = Path::new("../../sslib/actual-extract/");
