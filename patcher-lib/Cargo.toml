@@ -1,5 +1,5 @@
 [package]
-name = "patcher"
+name = "patcher-lib"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,4 +13,7 @@ rel = { path = "../rel" }
 msb = { path = "../msb" }
 anyhow = "1.0.68"
 thiserror = "1.0.38"
-patcher-lib = { path = "../patcher-lib" }
+disc_riider = { version = "0.1.0", src = "https://www.github.com/lepelog/disc-riider#ref=891bc7f8ff3f75db17f1195e00074086bd8af604" }
+log = "0.4.17"
+strum = { version = "0.24.1", features = ["derive"] }
+clap = { version = "4.1.4", features = ["derive"] }

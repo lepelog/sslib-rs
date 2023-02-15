@@ -139,13 +139,13 @@ pub struct EVNT {
 pub struct PLY {
     pub storyflag: i16,
     pub play_cutscene: i8,
-    pub byte4: u8,
+    pub byte4: i8,
     pub posx: f32,
     pub posy: f32,
     pub posz: f32,
-    pub anglex: f32,
-    pub angley: f32,
-    pub anglez: f32,
+    pub anglex: u16,
+    pub angley: u16,
+    pub anglez: u16,
     pub entrance_id: i16,
 }
 

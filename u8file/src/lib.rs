@@ -1,6 +1,6 @@
 use std::{
     borrow::{Borrow, BorrowMut},
-    io::{Cursor, Seek, SeekFrom, Write, Read},
+    io::{Cursor, Read, Seek, SeekFrom, Write},
     ops::Neg,
 };
 
@@ -146,7 +146,7 @@ impl Entry {
 
 pub const MAGIC_HEADER: u32 = 0x55AA382D;
 
-impl <'a> U8File<'a> {
+impl<'a> U8File<'a> {
     /// reads a byte Vector into an U8File or returns an Error
     pub fn read(v: &'a [u8]) -> Result<Self, U8ParseError> {
         let mut c = Cursor::new(v);

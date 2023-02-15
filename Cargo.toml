@@ -1,2 +1,2 @@
 [workspace]
-members = ["u8file", "sslib-proc", "bzs", "verification-tool", "rel", "patcher", "msb"]
+members = ["u8file", "sslib-proc", "bzs", "verification-tool", "rel", "patcher", "msb", "patcher-lib", "test-mod"]

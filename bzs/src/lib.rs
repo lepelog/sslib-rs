@@ -4,6 +4,8 @@ use encoding::{decode, encode_into, EncodingError};
 
 mod encoding;
 pub mod structs;
+pub mod edit;
+pub mod actor_params;
 
 /// allows setting a numeric value only partially
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

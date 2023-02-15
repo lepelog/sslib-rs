@@ -10,6 +10,7 @@ use std::{
 };
 use structs::RawFlw3;
 
+pub mod edit;
 mod structs;
 
 #[derive(Default, Debug)]
@@ -30,7 +31,7 @@ pub struct Msbf {
     pub entrypoints: HashMap<String, u32>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FlowEntry {
     Start {
         next: i16,

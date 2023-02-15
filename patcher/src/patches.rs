@@ -4,17 +4,10 @@ use bzs::structs::{BzsEntries, OBJ, SOBJ};
 
 use crate::actor_params::{NewSobjShim, ScChangOpts};
 
-#[derive(Debug, thiserror::Error)]
-pub enum InvalidPatchError {
-    #[error("Could not find id {0}")]
-    IdNotFound(u16),
-}
-
 pub trait ByIdExt {
     type Out;
     fn remove_by_id(&mut self, id: u16) -> Result<Self::Out, InvalidPatchError>;
     fn modify_by_id(&mut self, id: u16) -> Result<&mut Self::Out, InvalidPatchError>;
-    fn add_sc_chang(&mut self, next_id: &mut u16) -> ScChangOpts;
 }
 
 impl ByIdExt for Vec<OBJ> {
@@ -31,10 +24,6 @@ impl ByIdExt for Vec<OBJ> {
             .find(|obj| obj.id == id)
             .ok_or(InvalidPatchError::IdNotFound(id))
     }
-
-    fn add_sc_chang<'a>(&'a mut self, next_id: &mut u16) -> ScChangOpts<'a> {
-        todo!()
-    }
 }
 
 impl ByIdExt for Vec<SOBJ> {
@@ -50,17 +39,6 @@ impl ByIdExt for Vec<SOBJ> {
         self.iter_mut()
             .find(|obj| obj.id == id)
             .ok_or(InvalidPatchError::IdNotFound(id))
-    }
-
-    fn add_sc_chang<'a>(&'a mut self, next_id: &mut u16) -> ScChangOpts<'a> {
-        self.push(SOBJ::default());
-        *next_id += 1; 
-        let sobj = self.last_mut().unwrap();
-        sobj.id = *next_id;
-        sobj.name = zero_pad(b"ScChang");
-        sobj.params1 = 0xFFFFFFFF;
-        sobj.params2 = 0xFF5FFFFF;
-        ScChangOpts { sobj }
     }
 }
 
@@ -99,10 +77,16 @@ pub fn do_custom_obj_patch(obj: &mut OBJ, key: &str, value: u32) {
             } else if key == "subtype" {
                 obj.params1 = mask_shift_set(obj.params1, 0xFF, 0, value);
             } else {
-                panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+                panic!(
+                    "ERROR: unsupported key '{}' to patch for object {:?}'",
+                    key, obj.name
+                );
             }
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else if obj.name.starts_with(b"TBox") {
         if key == "spawnscenefid" {
@@ -112,9 +96,12 @@ pub fn do_custom_obj_patch(obj: &mut OBJ, key: &str, value: u32) {
         } else if key == "itemid" {
             obj.anglez = mask_shift_set(obj.anglez.into(), 0x1FF, 0, value) as u16;
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
-     } else if obj.name.starts_with(b"EvntTag") {
+    } else if obj.name.starts_with(b"EvntTag") {
         if key == "trigscenefid" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 16, value);
         } else if key == "setscenefid" {
@@ -122,7 +109,10 @@ pub fn do_custom_obj_patch(obj: &mut OBJ, key: &str, value: u32) {
         } else if key == "event" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 0, value);
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name)
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            )
         }
     } else if obj.name.starts_with(b"EvfTag") {
         if key == "trigstoryfid" {
@@ -132,7 +122,10 @@ pub fn do_custom_obj_patch(obj: &mut OBJ, key: &str, value: u32) {
         } else if key == "event" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 0, value);
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else if obj.name.starts_with(b"ScChang") {
         if key == "trigstoryfid" {
@@ -144,7 +137,10 @@ pub fn do_custom_obj_patch(obj: &mut OBJ, key: &str, value: u32) {
         } else if key == "trigscenefid" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 24, value);
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else if obj.name.starts_with(b"SwAreaT") {
         if key == "setstoryfid" {
@@ -156,12 +152,17 @@ pub fn do_custom_obj_patch(obj: &mut OBJ, key: &str, value: u32) {
         } else if key == "unsetscenefid" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 8, value);
         } else {
-        panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else {
-        panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+        panic!(
+            "ERROR: unsupported key '{}' to patch for object {:?}'",
+            key, obj.name
+        );
     }
-
 }
 
 pub fn do_custom_sobj_patch(obj: &mut SOBJ, key: &str, value: u32) {
@@ -180,10 +181,16 @@ pub fn do_custom_sobj_patch(obj: &mut SOBJ, key: &str, value: u32) {
             } else if key == "subtype" {
                 obj.params1 = mask_shift_set(obj.params1, 0xFF, 0, value);
             } else {
-                panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+                panic!(
+                    "ERROR: unsupported key '{}' to patch for object {:?}'",
+                    key, obj.name
+                );
             }
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else if obj.name.starts_with(b"TBox") {
         if key == "spawnscenefid" {
@@ -193,9 +200,12 @@ pub fn do_custom_sobj_patch(obj: &mut SOBJ, key: &str, value: u32) {
         } else if key == "itemid" {
             obj.anglez = mask_shift_set(obj.anglez.into(), 0x1FF, 0, value) as u16;
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
-     } else if obj.name.starts_with(b"EvntTag") {
+    } else if obj.name.starts_with(b"EvntTag") {
         if key == "trigscenefid" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 16, value);
         } else if key == "setscenefid" {
@@ -203,7 +213,10 @@ pub fn do_custom_sobj_patch(obj: &mut SOBJ, key: &str, value: u32) {
         } else if key == "event" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 0, value);
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name)
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            )
         }
     } else if obj.name.starts_with(b"EvfTag") {
         if key == "trigstoryfid" {
@@ -213,7 +226,10 @@ pub fn do_custom_sobj_patch(obj: &mut SOBJ, key: &str, value: u32) {
         } else if key == "event" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 0, value);
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else if obj.name.starts_with(b"ScChang") {
         if key == "trigstoryfid" {
@@ -225,7 +241,10 @@ pub fn do_custom_sobj_patch(obj: &mut SOBJ, key: &str, value: u32) {
         } else if key == "trigscenefid" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 24, value);
         } else {
-            panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else if obj.name.starts_with(b"SwAreaT") {
         if key == "setstoryfid" {
@@ -237,10 +256,16 @@ pub fn do_custom_sobj_patch(obj: &mut SOBJ, key: &str, value: u32) {
         } else if key == "unsetscenefid" {
             obj.params1 = mask_shift_set(obj.params1, 0xFF, 8, value);
         } else {
-        panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+            panic!(
+                "ERROR: unsupported key '{}' to patch for object {:?}'",
+                key, obj.name
+            );
         }
     } else {
-        panic!("ERROR: unsupported key '{}' to patch for object {:?}'", key, obj.name);
+        panic!(
+            "ERROR: unsupported key '{}' to patch for object {:?}'",
+            key, obj.name
+        );
     }
 }
 

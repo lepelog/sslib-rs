@@ -1,11 +1,10 @@
 enum FlowRef {
     Id(u16),
     Ref(&'static str),
-    SRef(String),
 }
 
-enum PatckKind {
-    Tbox {
+pub enum PatchKind {
+    TBox {
         stage: &'static str,
         room: u8,
         layer: u8,
@@ -17,9 +16,48 @@ enum PatckKind {
         layer: u8,
         flag: u8,
     },
+    Soil {
+        stage: &'static str,
+        room: u8,
+        layer: u8,
+        flag: u8,
+    },
+    chest {
+        stage: &'static str,
+        room: u8,
+        layer: u8,
+        flag: u8,
+    },
+    EBc {
+        stage: &'static str,
+        room: u8,
+        layer: u8,
+        id: u16,
+    },
+    Chandel {
+        stage: &'static str,
+        room: u8,
+        layer: u8,
+    },
+    WarpObj {
+        stage: &'static str,
+        room: u8,
+        layer: u8,
+    },
+    HeartCo {
+        stage: &'static str,
+        room: u8,
+        layer: u8,
+    },
+    SwSB {
+        stage: &'static str,
+        room: u8,
+        layer: u8,
+        index: u8,
+    },
     FlowById {
         file: &'static str,
-        id: u16,
+        index: u16,
     },
     FlowByName {
         file: &'static str,
@@ -29,24 +67,7 @@ enum PatckKind {
         stage: &'static str,
         layer: u8,
     },
+    ShpSmpl {
+        index: u8,
+    },
 }
-
-use PatckKind::*;
-
-const patches: &[(&'static str, &'static [PatckKind])] = &[(
-    "Fledge",
-    &[
-        FlowById {
-            file: "frend",
-            id: 123,
-        },
-        Oarc {
-            stage: "F001r",
-            layer: 4,
-        },
-        Oarc {
-            stage: "F001r",
-            layer: 3,
-        },
-    ],
-)];
